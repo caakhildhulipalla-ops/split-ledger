@@ -1,15 +1,24 @@
-import type { Metadata } from 'next';
+'use client';
+
+import { Suspense, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import SignInForm from '@/components/SignInForm';
+import { useAuth, FullScreenLoader } from '@/lib/auth';
 
-export const metadata: Metadata = { title: 'Sign in' };
+function SignIn() {
+  const params = useSearchParams();
+  const router = useRouter();
+  const { user, loading } = useAuth();
 
-export default async function SignInPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ next?: string; error?: string }>;
-}) {
-  const params = await searchParams;
-  const next = params.next && params.next.startsWith('/') ? params.next : '/groups';
+  const rawNext = params.get('next');
+  const next = rawNext && rawNext.startsWith('/') ? rawNext : '/groups';
+  const error = params.get('error') ?? undefined;
+
+  useEffect(() => {
+    if (!loading && user) router.replace(next);
+  }, [loading, user, next, router]);
+
+  if (loading || user) return <FullScreenLoader />;
 
   return (
     <div className="wrap-narrow">
@@ -26,7 +35,15 @@ export default async function SignInPage({
         </p>
       </div>
 
-      <SignInForm next={next} initialError={params.error} />
+      <SignInForm next={next} initialError={error} />
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<FullScreenLoader />}>
+      <SignIn />
+    </Suspense>
   );
 }

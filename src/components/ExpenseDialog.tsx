@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/router-compat';
 import Dialog from './Dialog';
 import SplitEditor, { splitIsValid, type SplitState } from './SplitEditor';
-import { saveExpense, deleteExpense } from '@/app/actions';
+import { saveExpense, deleteExpense } from '@/lib/mutations';
 import { CATEGORIES, type Expense, type GroupMember } from '@/lib/types';
 import { todayISO } from '@/lib/format';
 

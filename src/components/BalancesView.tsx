@@ -1,11 +1,11 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/router-compat';
 import SettlementDialog, { type PrefilledPayment } from './SettlementDialog';
 import { netBalances, settleUp, pairwiseDebts } from '@/lib/money';
 import { money, dayLabel, hueVar, plural } from '@/lib/format';
-import { deleteSettlement } from '@/app/actions';
+import { deleteSettlement } from '@/lib/mutations';
 import type { GroupData } from '@/lib/types';
 
 export default function BalancesView({ data }: { data: GroupData }) {

@@ -1,37 +1,31 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 
-const TABS = [
-  ['', 'Ledger'],
+export const GROUP_TABS = [
+  ['ledger', 'Ledger'],
   ['balances', 'Balances'],
   ['dashboard', 'Dashboard'],
   ['recurring', 'Recurring'],
   ['activity', 'Activity'],
 ] as const;
 
-export default function Tabs({ gid }: { gid: string }) {
-  const pathname = usePathname();
-  const base = `/g/${gid}`;
+export type GroupTab = (typeof GROUP_TABS)[number][0];
 
+export default function Tabs({ gid, active }: { gid: string; active: string }) {
   return (
     <div className="tabs">
       <div className="tabs-in">
-        {TABS.map(([slug, label]) => {
-          const href = slug ? `${base}/${slug}` : base;
-          const active = pathname === href;
-          return (
-            <Link
-              key={label}
-              href={href}
-              className="tab"
-              aria-current={active ? 'page' : undefined}
-            >
-              {label}
-            </Link>
-          );
-        })}
+        {GROUP_TABS.map(([slug, label]) => (
+          <Link
+            key={slug}
+            href={`/g?id=${gid}&tab=${slug}`}
+            className="tab"
+            aria-current={active === slug ? 'page' : undefined}
+          >
+            {label}
+          </Link>
+        ))}
       </div>
     </div>
   );

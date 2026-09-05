@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/router-compat';
 import Dialog from './Dialog';
-import { saveSettlement } from '@/app/actions';
+import { saveSettlement } from '@/lib/mutations';
 import { todayISO } from '@/lib/format';
 import type { GroupMember } from '@/lib/types';
 

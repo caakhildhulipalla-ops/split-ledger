@@ -1,9 +1,9 @@
 'use client';
 
 import { useMemo, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/router-compat';
 import { money, dayLabel, whenLabel, hueVar } from '@/lib/format';
-import { restoreExpense, purgeExpense } from '@/app/actions';
+import { restoreExpense, purgeExpense } from '@/lib/mutations';
 import type { GroupData } from '@/lib/types';
 
 interface Entry {

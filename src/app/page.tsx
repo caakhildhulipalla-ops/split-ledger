@@ -1,7 +1,18 @@
-import { redirect } from 'next/navigation';
+'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth, FullScreenLoader } from '@/lib/auth';
+
+/** Entry point: route to the group list or to sign-in once the session is known. */
 export default function Home() {
-  // The middleware sends signed-out visitors to /signin, so anyone reaching
-  // here has a session.
-  redirect('/groups');
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+    router.replace(user ? '/groups' : '/signin');
+  }, [user, loading, router]);
+
+  return <FullScreenLoader />;
 }

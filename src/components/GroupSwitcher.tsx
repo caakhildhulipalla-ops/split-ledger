@@ -19,7 +19,7 @@ export default function GroupSwitcher({
         value={current}
         onChange={(e) => {
           if (e.target.value === '__all') router.push('/groups');
-          else router.push(`/g/${e.target.value}`);
+          else router.push(`/g?id=${e.target.value}`);
         }}
       >
         {groups.map((g) => (

@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/router-compat';
 import Dialog from './Dialog';
 import SplitEditor, { splitIsValid, type SplitState } from './SplitEditor';
-import { saveRecurring, toggleRecurring, deleteRecurring } from '@/app/actions';
+import { saveRecurring, toggleRecurring, deleteRecurring } from '@/lib/mutations';
 import { money, monthLabel, monthOf, todayISO, splitLabel, hueVar, ordinal, plural } from '@/lib/format';
 import { CATEGORIES, type GroupData, type RecurringExpense } from '@/lib/types';
 

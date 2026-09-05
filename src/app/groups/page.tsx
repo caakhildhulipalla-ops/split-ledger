@@ -1,81 +1,23 @@
-import type { Metadata } from 'next';
+'use client';
+
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { useRouter } from 'next/navigation';
+import { RequireAuth, FullScreenLoader } from '@/lib/auth';
+import { useGroups } from '@/lib/hooks';
+import { signOut } from '@/lib/mutations';
 import { money, plural, hueVar } from '@/lib/format';
 import NewGroupDialog from '@/components/NewGroupDialog';
-import { signOut } from '../actions';
 
-export const metadata: Metadata = { title: 'Your groups' };
+function Groups() {
+  const router = useRouter();
+  const { data, loading } = useGroups();
 
-export default async function GroupsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect('/signin');
+  if (loading && !data) return <FullScreenLoader />;
 
-  const { data: groups } = await supabase
-    .from('groups')
-    .select('*')
-    .order('created_at', { ascending: true });
-
-  const groupIds = (groups ?? []).map((g) => g.id);
-
-  // Five queries total regardless of how many groups there are — the naive
-  // shape here is one query per group, which degrades badly.
-  const [membersRes, expensesRes, settlementsRes] = await Promise.all([
-    groupIds.length
-      ? supabase.from('group_members').select('*').in('group_id', groupIds)
-      : Promise.resolve({ data: [] as never[] }),
-    groupIds.length
-      ? supabase
-          .from('expenses')
-          .select('id, group_id, amount_minor, payer_member_id, spent_on')
-          .in('group_id', groupIds)
-          .is('deleted_at', null)
-      : Promise.resolve({ data: [] as never[] }),
-    groupIds.length
-      ? supabase
-          .from('settlements')
-          .select('group_id, from_member_id, to_member_id, amount_minor')
-          .in('group_id', groupIds)
-          .is('deleted_at', null)
-      : Promise.resolve({ data: [] as never[] }),
-  ]);
-
-  const members = membersRes.data ?? [];
-  const myMemberIds = members.filter((m) => m.user_id === user.id).map((m) => m.id);
-
-  const sharesRes = myMemberIds.length
-    ? await supabase
-        .from('expense_shares')
-        .select('group_id, member_id, amount_minor, expense_id')
-        .in('member_id', myMemberIds)
-    : { data: [] as never[] };
-
-  // Only shares belonging to live expenses count toward a balance.
-  const liveExpenseIds = new Set((expensesRes.data ?? []).map((e) => e.id));
-
-  const net = new Map<string, number>();
-  const bump = (gid: string, v: number) => net.set(gid, (net.get(gid) ?? 0) + v);
-
-  for (const e of expensesRes.data ?? []) {
-    if (myMemberIds.includes(e.payer_member_id)) bump(e.group_id, e.amount_minor);
-  }
-  for (const s of sharesRes.data ?? []) {
-    if (liveExpenseIds.has(s.expense_id)) bump(s.group_id, -s.amount_minor);
-  }
-  for (const s of settlementsRes.data ?? []) {
-    if (myMemberIds.includes(s.from_member_id)) bump(s.group_id, s.amount_minor);
-    if (myMemberIds.includes(s.to_member_id)) bump(s.group_id, -s.amount_minor);
-  }
-
-  const displayName =
-    members.find((m) => m.user_id === user.id)?.display_name ??
-    user.email ??
-    user.phone ??
-    'you';
+  const groups = data?.groups ?? [];
+  const members = data?.members ?? [];
+  const net = data?.net ?? new Map<string, number>();
+  const displayName = data?.displayName ?? 'you';
 
   return (
     <>
@@ -87,11 +29,16 @@ export default async function GroupsPage() {
           </Link>
           <span className="mast-spacer" />
           <span className="mini">{displayName}</span>
-          <form action={signOut}>
-            <button className="btn btn-sm btn-ghost" type="submit">
-              Sign out
-            </button>
-          </form>
+          <button
+            className="btn btn-sm btn-ghost"
+            type="button"
+            onClick={async () => {
+              await signOut();
+              router.push('/signin');
+            }}
+          >
+            Sign out
+          </button>
         </div>
       </div>
 
@@ -104,7 +51,7 @@ export default async function GroupsPage() {
             <NewGroupDialog />
           </div>
 
-          {groups?.length ? (
+          {groups.length ? (
             <div className="tbl-scroll">
               <table className="ledger">
                 <thead>
@@ -122,7 +69,7 @@ export default async function GroupsPage() {
                       <tr key={g.id} className="clickable">
                         <td>
                           <Link
-                            href={`/g/${g.id}`}
+                            href={`/g?id=${g.id}`}
                             style={{ textDecoration: 'none', color: 'inherit' }}
                           >
                             <div className="desc">{g.name}</div>
@@ -174,7 +121,7 @@ export default async function GroupsPage() {
             </div>
           )}
 
-          {groups?.length ? (
+          {groups.length ? (
             <div className="recon">
               <span className="mini">
                 {plural(groups.length, 'group')} ·{' '}
@@ -185,5 +132,13 @@ export default async function GroupsPage() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function GroupsPage() {
+  return (
+    <RequireAuth>
+      <Groups />
+    </RequireAuth>
   );
 }

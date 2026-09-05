@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/router-compat';
 import Dialog from './Dialog';
-import { createGroup } from '@/app/actions';
+import { createGroup } from '@/lib/mutations';
 import { CURRENCIES } from '@/lib/types';
 import { hueVar } from '@/lib/format';
 
@@ -33,8 +33,8 @@ export default function NewGroupDialog() {
       }
       setOpen(false);
       reset();
-      if (res.id) router.push(`/g/${res.id}`);
-      else router.refresh();
+      router.refresh();
+      if (res.id) router.push(`/g?id=${res.id}`);
     });
 
   return (

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/router-compat';
 import {
   updateGroup,
   deleteGroup,
@@ -11,7 +11,7 @@ import {
   restoreMember,
   createInvite,
   revokeInvite,
-} from '@/app/actions';
+} from '@/lib/mutations';
 import { hueVar, whenLabel, plural } from '@/lib/format';
 import { CURRENCIES, type GroupData, type GroupInvite } from '@/lib/types';
 
@@ -48,7 +48,7 @@ export default function SettingsView({
       router.refresh();
     });
 
-  const inviteLink = (code: string) => `${origin}/join/${code}`;
+  const inviteLink = (code: string) => `${origin}/join?code=${code}`;
 
   const copy = async (code: string) => {
     try {
@@ -324,7 +324,16 @@ export default function SettingsView({
                   `Delete "${group.name}" and every expense in it? This cannot be undone.`,
                 )
               )
-                run(() => deleteGroup(group.id));
+                start(async () => {
+                  setError('');
+                  const res = await deleteGroup(group.id);
+                  if (!res.ok) {
+                    setError(res.error);
+                    return;
+                  }
+                  router.refresh();
+                  router.push('/groups');
+                });
             }}
           >
             Delete this group

@@ -1,6 +1,4 @@
-import 'server-only';
-import { notFound, redirect } from 'next/navigation';
-import { createClient } from './supabase/server';
+import { supabase } from './supabase/client';
 import { resolveSplit } from './money';
 import type {
   GroupData,
@@ -12,19 +10,26 @@ import type {
 import type { ExpenseLike, SettlementLike, Shares } from './money';
 import { monthOf, todayISO } from './format';
 
+/** Distinguishes "no group for you" from a transport error, for the UI. */
+export class GroupNotFound extends Error {
+  constructor() {
+    super('group-not-found');
+    this.name = 'GroupNotFound';
+  }
+}
+
 /**
- * Load one group in a single round trip.
+ * Load one group in a handful of round trips.
  *
- * Every query below runs under RLS as the signed-in user, so a group id the
- * caller has no business seeing simply returns nothing — the 404 is a real
- * "not found for you", not an authorisation check written in application code.
+ * Every query runs under RLS as the signed-in user, so a group id the caller
+ * has no business seeing simply returns nothing — the "not found" is a real
+ * "not found for you", not an authorisation check written in app code.
  */
 export async function loadGroup(groupId: string): Promise<GroupData> {
-  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect('/signin');
+  if (!user) throw new Error('not-signed-in');
 
   const [groupRes, membersRes, expensesRes, settlementsRes, recurringRes] = await Promise.all([
     supabase.from('groups').select('*').eq('id', groupId).maybeSingle(),
@@ -43,7 +48,7 @@ export async function loadGroup(groupId: string): Promise<GroupData> {
     supabase.from('recurring_expenses').select('*').eq('group_id', groupId),
   ]);
 
-  if (!groupRes.data) notFound();
+  if (!groupRes.data) throw new GroupNotFound();
 
   const members = (membersRes.data ?? []) as GroupMember[];
   const me = members.find((m) => m.user_id === user.id) ?? null;
@@ -115,7 +120,6 @@ export async function postDueRecurring(data: GroupData): Promise<number> {
   const active = data.recurring.filter((r) => r.active);
   if (!active.length) return 0;
 
-  const supabase = await createClient();
   const today = todayISO();
   const nowYM = monthOf(today);
   const memberIds = new Set(activeMemberIds(data.members));

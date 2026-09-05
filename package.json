@@ -1,0 +1,40 @@
+{
+  "name": "split-ledger",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared expense ledger for groups — split bills, settle up in the fewest payments, see where the money goes.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "icons": "node scripts/make-icons.mjs",
+    "screenshots": "node scripts/screenshots.mjs",
+    "test:db": "bash scripts/test-db.sh",
+    "db:push": "psql \"$DATABASE_URL\" -f supabase/migrations/0001_schema.sql -f supabase/migrations/0002_rls.sql -f supabase/migrations/0003_rpc.sql"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/ibm-plex-sans": "^5.3.0",
+    "@fontsource/zilla-slab": "^5.3.0",
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.45.4",
+    "next": "^15.0.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "sharp": "^0.35.4",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

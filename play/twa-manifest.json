@@ -1,0 +1,52 @@
+{
+  "_comment": [
+    "Bubblewrap configuration for the Google Play build.",
+    "Replace every REPLACE_ME before running `bubblewrap init --manifest ./play/twa-manifest.json`.",
+    "packageId must be a domain you control, reversed. It can never be changed",
+    "once published — a different packageId is a different app on Play."
+  ],
+
+  "packageId": "app.splitledger.twa",
+  "host": "REPLACE_ME.vercel.app",
+  "name": "Split Ledger",
+  "launcherName": "Split Ledger",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#FDFEFC",
+  "themeColorDark": "#161B17",
+  "navigationColor": "#FDFEFC",
+  "navigationColorDark": "#161B17",
+  "navigationDividerColor": "#BFCBB9",
+  "navigationDividerColorDark": "#3B453E",
+  "backgroundColor": "#EAF0E6",
+  "enableNotifications": false,
+  "startUrl": "/groups",
+  "iconUrl": "https://REPLACE_ME.vercel.app/icons/icon-512.png",
+  "maskableIconUrl": "https://REPLACE_ME.vercel.app/icons/maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "android"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "Your groups",
+      "short_name": "Groups",
+      "url": "/groups",
+      "chosenIconUrl": "https://REPLACE_ME.vercel.app/icons/icon-192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://REPLACE_ME.vercel.app/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": { "enabled": false },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://REPLACE_ME.vercel.app/",
+  "minSdkVersion": 21,
+  "orientationLock": false
+}

@@ -5,9 +5,19 @@ out
 .env*.local
 *.tsbuildinfo
 .DS_Store
+.vercel
+
+# Capacitor — copied web assets and local build state
 ios/App/Pods
 ios/App/App/public
 android/app/src/main/assets/public
 android/.gradle
+android/build
+android/app/build
+android/capacitor-cordova-android-plugins
 android/local.properties
-.vercel
+
+# Signing — never commit keystores or their passwords
+android/keystore.properties
+*.jks
+*.keystore

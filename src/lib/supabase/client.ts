@@ -1,4 +1,4 @@
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 /**
  * The one Supabase client in the app.
@@ -15,7 +15,7 @@ import { createBrowserClient } from '@supabase/ssr';
  * landing is handled explicitly in `app/auth/callback`.
  */
 export function createClient() {
-  return createBrowserClient(
+  return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -24,6 +24,7 @@ export function createClient() {
         autoRefreshToken: true,
         detectSessionInUrl: false,
         flowType: 'pkce',
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
       },
     },
   );

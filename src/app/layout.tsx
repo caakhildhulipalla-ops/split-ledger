@@ -14,6 +14,7 @@ import '@fontsource/zilla-slab/700.css';
 
 import './globals.css';
 import ServiceWorker from '@/components/ServiceWorker';
+import NativeInit from '@/components/NativeInit';
 import { AuthProvider } from '@/lib/auth';
 
 export const metadata: Metadata = {
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <AuthProvider>{children}</AuthProvider>
+        <NativeInit />
         <ServiceWorker />
       </body>
     </html>

@@ -1,23 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { isNative } from '@/lib/native';
 
-type Method = 'google' | 'email' | 'phone';
+type Method = 'email' | 'google' | 'phone';
 
 export default function SignInForm({ next, initialError }: { next: string; initialError?: string }) {
   const router = useRouter();
   const supabase = createClient();
 
-  const [method, setMethod] = useState<Method>('google');
+  const [method, setMethod] = useState<Method>('email');
+  const [native, setNative] = useState(false);
+
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
+  const [code, setCode] = useState('');
+  const [codeSent, setCodeSent] = useState(false); // an OTP has been sent, show the code field
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(initialError ?? '');
-  const [sent, setSent] = useState('');
+  const [notice, setNotice] = useState('');
+
+  useEffect(() => setNative(isNative()), []);
 
   const redirectTo = () =>
     `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
@@ -34,6 +39,14 @@ export default function SignInForm({ next, initialError }: { next: string; initi
     }
   }
 
+  const reset = (m: Method) => {
+    setMethod(m);
+    setError('');
+    setNotice('');
+    setCode('');
+    setCodeSent(false);
+  };
+
   const signInGoogle = () =>
     withBusy(async () => {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -43,35 +56,50 @@ export default function SignInForm({ next, initialError }: { next: string; initi
       if (error) throw error;
     });
 
-  const sendMagicLink = () =>
+  const sendEmailCode = () =>
     withBusy(async () => {
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
-        options: { emailRedirectTo: redirectTo() },
+        options: { shouldCreateUser: true },
       });
       if (error) throw error;
-      setSent(`Check ${email.trim()} — the link signs you straight in.`);
+      setCodeSent(true);
+      setNotice(`We sent a 6-digit code to ${email.trim()}.`);
     });
 
   const sendSms = () =>
     withBusy(async () => {
       const { error } = await supabase.auth.signInWithOtp({ phone: phone.trim() });
       if (error) throw error;
-      setOtpSent(true);
-      setSent(`Code sent to ${phone.trim()}.`);
+      setCodeSent(true);
+      setNotice(`We sent a code to ${phone.trim()}.`);
     });
 
-  const verifySms = () =>
+  const verify = () =>
     withBusy(async () => {
-      const { error } = await supabase.auth.verifyOtp({
-        phone: phone.trim(),
-        token: otp.trim(),
-        type: 'sms',
-      });
+      const { error } =
+        method === 'phone'
+          ? await supabase.auth.verifyOtp({ phone: phone.trim(), token: code.trim(), type: 'sms' })
+          : await supabase.auth.verifyOtp({
+              email: email.trim(),
+              token: code.trim(),
+              type: 'email',
+            });
       if (error) throw error;
       router.push(next);
       router.refresh();
     });
+
+  const tabs: [Method, string][] = native
+    ? [
+        ['email', 'Email'],
+        ['phone', 'Phone'],
+      ]
+    : [
+        ['email', 'Email'],
+        ['google', 'Google'],
+        ['phone', 'Phone'],
+      ];
 
   return (
     <div className="sheet">
@@ -82,24 +110,13 @@ export default function SignInForm({ next, initialError }: { next: string; initi
 
       <div className="sheet-body">
         <div className="seg" style={{ marginBottom: 18, width: '100%' }}>
-          {(
-            [
-              ['google', 'Google'],
-              ['email', 'Email'],
-              ['phone', 'Phone'],
-            ] as [Method, string][]
-          ).map(([k, label]) => (
+          {tabs.map(([k, label]) => (
             <button
               key={k}
               type="button"
               style={{ flex: '1 1 0' }}
               aria-pressed={method === k}
-              onClick={() => {
-                setMethod(k);
-                setError('');
-                setSent('');
-                setOtpSent(false);
-              }}
+              onClick={() => reset(k)}
             >
               {label}
             </button>
@@ -117,12 +134,12 @@ export default function SignInForm({ next, initialError }: { next: string; initi
           </div>
         )}
 
-        {method === 'email' && (
+        {method === 'email' && !codeSent && (
           <form
             className="stack"
             onSubmit={(e) => {
               e.preventDefault();
-              sendMagicLink();
+              sendEmailCode();
             }}
           >
             <div className="field" style={{ marginBottom: 0 }}>
@@ -138,13 +155,13 @@ export default function SignInForm({ next, initialError }: { next: string; initi
               />
             </div>
             <button className="btn btn-primary btn-lg" disabled={busy || !email.trim()}>
-              {busy ? 'Sending…' : 'Email me a sign-in link'}
+              {busy ? 'Sending…' : 'Email me a code'}
             </button>
-            <p className="mini">No password. The link lasts an hour and signs you in once.</p>
+            <p className="mini">No password. The code lasts an hour and signs you in once.</p>
           </form>
         )}
 
-        {method === 'phone' && !otpSent && (
+        {method === 'phone' && !codeSent && (
           <form
             className="stack"
             onSubmit={(e) => {
@@ -171,46 +188,46 @@ export default function SignInForm({ next, initialError }: { next: string; initi
           </form>
         )}
 
-        {method === 'phone' && otpSent && (
+        {(method === 'email' || method === 'phone') && codeSent && (
           <form
             className="stack"
             onSubmit={(e) => {
               e.preventDefault();
-              verifySms();
+              verify();
             }}
           >
             <div className="field" style={{ marginBottom: 0 }}>
-              <label htmlFor="otp">Six-digit code</label>
+              <label htmlFor="code">Six-digit code</label>
               <input
-                id="otp"
+                id="code"
                 className="code-input"
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 maxLength={6}
                 required
                 placeholder="······"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
               />
             </div>
-            <button className="btn btn-primary btn-lg" disabled={busy || otp.length < 4}>
+            <button className="btn btn-primary btn-lg" disabled={busy || code.length < 6}>
               {busy ? 'Checking…' : 'Verify and sign in'}
             </button>
             <button
               type="button"
               className="btn btn-ghost"
               onClick={() => {
-                setOtpSent(false);
-                setOtp('');
-                setSent('');
+                setCodeSent(false);
+                setCode('');
+                setNotice('');
               }}
             >
-              Use a different number
+              {method === 'phone' ? 'Use a different number' : 'Use a different email'}
             </button>
           </form>
         )}
 
-        {sent && !error && <p className="hint good">{sent}</p>}
+        {notice && !error && <p className="hint good">{notice}</p>}
         {error && <p className="hint bad">{error}</p>}
       </div>
 

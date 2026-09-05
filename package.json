@@ -13,19 +13,33 @@
     "icons": "node scripts/make-icons.mjs",
     "screenshots": "node scripts/screenshots.mjs",
     "test:db": "bash scripts/test-db.sh",
-    "db:push": "psql \"$DATABASE_URL\" -f supabase/migrations/0001_schema.sql -f supabase/migrations/0002_rls.sql -f supabase/migrations/0003_rpc.sql"
+    "db:push": "psql \"$DATABASE_URL\" -f supabase/migrations/0001_schema.sql -f supabase/migrations/0002_rls.sql -f supabase/migrations/0003_rpc.sql",
+    "assets:src": "node scripts/make-native-assets.mjs",
+    "assets": "npm run assets:src && capacitor-assets generate --android",
+    "cap:sync": "next build && cap sync",
+    "android:open": "npm run cap:sync && cap open android",
+    "android:build": "npm run cap:sync && cd android && ./gradlew bundleRelease"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/browser": "^8.0.4",
+    "@capacitor/core": "^8.5.1",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/keyboard": "^8.0.5",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.3",
     "@fontsource/ibm-plex-mono": "^5.3.0",
     "@fontsource/ibm-plex-sans": "^5.3.0",
     "@fontsource/zilla-slab": "^5.3.0",
     "@supabase/supabase-js": "^2.45.4",
     "next": "^15.0.3",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "server-only": "^0.0.1"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.5.1",
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.1",
     "@types/node": "^22.9.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

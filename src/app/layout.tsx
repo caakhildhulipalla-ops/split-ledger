@@ -15,6 +15,7 @@ import '@fontsource/zilla-slab/700.css';
 import './globals.css';
 import ServiceWorker from '@/components/ServiceWorker';
 import NativeInit from '@/components/NativeInit';
+import DeepLinkAuth from '@/components/DeepLinkAuth';
 import { AuthProvider } from '@/lib/auth';
 
 export const metadata: Metadata = {
@@ -52,6 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <AuthProvider>{children}</AuthProvider>
         <NativeInit />
+        <DeepLinkAuth />
         <ServiceWorker />
       </body>
     </html>

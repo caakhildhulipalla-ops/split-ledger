@@ -7,6 +7,8 @@ import { isNative } from '@/lib/native';
 
 type Method = 'email' | 'google' | 'phone';
 
+const NATIVE_CALLBACK = 'app.splitledger://auth/callback';
+
 export default function SignInForm({ next, initialError }: { next: string; initialError?: string }) {
   const router = useRouter();
   const supabase = createClient();
@@ -17,15 +19,20 @@ export default function SignInForm({ next, initialError }: { next: string; initi
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
-  const [codeSent, setCodeSent] = useState(false); // an OTP has been sent, show the code field
+  const [phoneCodeSent, setPhoneCodeSent] = useState(false);
+  const [linkSent, setLinkSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(initialError ?? '');
   const [notice, setNotice] = useState('');
 
   useEffect(() => setNative(isNative()), []);
 
-  const redirectTo = () =>
-    `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+  const callbackUrl = () => {
+    const q = `?next=${encodeURIComponent(next)}`;
+    return isNative()
+      ? `${NATIVE_CALLBACK}${q}`
+      : `${window.location.origin}/auth/callback${q}`;
+  };
 
   async function withBusy(fn: () => Promise<void>) {
     setBusy(true);
@@ -44,47 +51,45 @@ export default function SignInForm({ next, initialError }: { next: string; initi
     setError('');
     setNotice('');
     setCode('');
-    setCodeSent(false);
+    setPhoneCodeSent(false);
+    setLinkSent(false);
   };
 
   const signInGoogle = () =>
     withBusy(async () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: redirectTo() },
+        options: { redirectTo: callbackUrl() },
       });
       if (error) throw error;
     });
 
-  const sendEmailCode = () =>
+  const sendMagicLink = () =>
     withBusy(async () => {
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
-        options: { shouldCreateUser: true },
+        options: { emailRedirectTo: callbackUrl(), shouldCreateUser: true },
       });
       if (error) throw error;
-      setCodeSent(true);
-      setNotice(`We sent a 6-digit code to ${email.trim()}.`);
+      setLinkSent(true);
+      setNotice(`Check ${email.trim()} and tap the sign-in link.`);
     });
 
   const sendSms = () =>
     withBusy(async () => {
       const { error } = await supabase.auth.signInWithOtp({ phone: phone.trim() });
       if (error) throw error;
-      setCodeSent(true);
+      setPhoneCodeSent(true);
       setNotice(`We sent a code to ${phone.trim()}.`);
     });
 
-  const verify = () =>
+  const verifySms = () =>
     withBusy(async () => {
-      const { error } =
-        method === 'phone'
-          ? await supabase.auth.verifyOtp({ phone: phone.trim(), token: code.trim(), type: 'sms' })
-          : await supabase.auth.verifyOtp({
-              email: email.trim(),
-              token: code.trim(),
-              type: 'email',
-            });
+      const { error } = await supabase.auth.verifyOtp({
+        phone: phone.trim(),
+        token: code.trim(),
+        type: 'sms',
+      });
       if (error) throw error;
       router.push(next);
       router.refresh();
@@ -134,12 +139,12 @@ export default function SignInForm({ next, initialError }: { next: string; initi
           </div>
         )}
 
-        {method === 'email' && !codeSent && (
+        {method === 'email' && !linkSent && (
           <form
             className="stack"
             onSubmit={(e) => {
               e.preventDefault();
-              sendEmailCode();
+              sendMagicLink();
             }}
           >
             <div className="field" style={{ marginBottom: 0 }}>
@@ -155,13 +160,35 @@ export default function SignInForm({ next, initialError }: { next: string; initi
               />
             </div>
             <button className="btn btn-primary btn-lg" disabled={busy || !email.trim()}>
-              {busy ? 'Sending…' : 'Email me a code'}
+              {busy ? 'Sending…' : 'Email me a sign-in link'}
             </button>
-            <p className="mini">No password. The code lasts an hour and signs you in once.</p>
+            <p className="mini">No password. The link lasts an hour and signs you in once.</p>
           </form>
         )}
 
-        {method === 'phone' && !codeSent && (
+        {method === 'email' && linkSent && (
+          <div className="stack">
+            <p className="hint good" style={{ marginTop: 0 }}>
+              {notice}
+            </p>
+            <p className="mini">
+              Open it on this {native ? 'phone' : 'device'} — it brings you straight back
+              here, signed in.
+            </p>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => {
+                setLinkSent(false);
+                setNotice('');
+              }}
+            >
+              Use a different email
+            </button>
+          </div>
+        )}
+
+        {method === 'phone' && !phoneCodeSent && (
           <form
             className="stack"
             onSubmit={(e) => {
@@ -188,12 +215,12 @@ export default function SignInForm({ next, initialError }: { next: string; initi
           </form>
         )}
 
-        {(method === 'email' || method === 'phone') && codeSent && (
+        {method === 'phone' && phoneCodeSent && (
           <form
             className="stack"
             onSubmit={(e) => {
               e.preventDefault();
-              verify();
+              verifySms();
             }}
           >
             <div className="field" style={{ marginBottom: 0 }}>
@@ -217,17 +244,17 @@ export default function SignInForm({ next, initialError }: { next: string; initi
               type="button"
               className="btn btn-ghost"
               onClick={() => {
-                setCodeSent(false);
+                setPhoneCodeSent(false);
                 setCode('');
                 setNotice('');
               }}
             >
-              {method === 'phone' ? 'Use a different number' : 'Use a different email'}
+              Use a different number
             </button>
           </form>
         )}
 
-        {notice && !error && <p className="hint good">{notice}</p>}
+        {notice && !error && !linkSent && <p className="hint good">{notice}</p>}
         {error && <p className="hint bad">{error}</p>}
       </div>
 

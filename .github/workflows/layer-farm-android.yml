@@ -13,7 +13,9 @@ name: Layer Farm MIS — Android build
 
 on:
   push:
-    branches: [main]
+    # Feature branches build too, so an APK can be installed and tried before
+    # anything is merged.
+    branches: [main, 'claude/**']
   pull_request:
   workflow_dispatch:
     inputs:

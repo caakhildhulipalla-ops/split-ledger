@@ -101,8 +101,13 @@ for (const [dir, size] of splashSizes) {
     join(root, 'android/app/src/main/res', dir, 'splash.png'),
     await sharp(Buffer.from(splash(CREAM, GREEN))).resize(size, size).png().toBuffer(),
   );
+  // Android resource qualifiers have a fixed order: orientation before night
+  // mode before density, e.g. drawable-port-night-mdpi. A plain prefix
+  // replace would put night before the orientation qualifier and produce an
+  // invalid directory name.
+  const nightDir = dir === 'drawable' ? 'drawable-night' : dir.replace('-port-', '-port-night-');
   await write(
-    join(root, 'android/app/src/main/res', dir.replace('drawable', 'drawable-night'), 'splash.png'),
+    join(root, 'android/app/src/main/res', nightDir, 'splash.png'),
     await sharp(Buffer.from(splash(GREEN_DARK, CREAM))).resize(size, size).png().toBuffer(),
   );
 }

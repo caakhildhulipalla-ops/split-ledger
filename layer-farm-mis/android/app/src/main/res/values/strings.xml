@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Layer Farm MIS</string>
+    <string name="title_activity_main">Layer Farm MIS</string>
+    <string name="package_name">in.layerfarm.mis</string>
+    <string name="custom_url_scheme">in.layerfarm.mis</string>
+</resources>
